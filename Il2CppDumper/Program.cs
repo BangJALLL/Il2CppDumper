@@ -17,95 +17,22 @@ namespace Il2CppDumper
         static void Main(string[] args)
         {
             config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + @"config.json"));
-            string il2cppPath = null;
-            string metadataPath = null;
-            string outputDir = null;
-
-            if (args.Length == 1)
+            Console.WriteLine("Input il2cpp path:");
+            string il2cppPath = Console.ReadLine();
+            Console.WriteLine("Input metadata path:");
+            string metadataPath = Console.ReadLine();
+            Console.WriteLine("Input output path:");
+            string outputDir = Console.ReadLine();
+            try
             {
-                if (args[0] == "-h" || args[0] == "--help" || args[0] == "/?" || args[0] == "/h")
+                if (Init(il2cppPath, metadataPath, out var metadata, out var il2Cpp))
                 {
-                    ShowHelp();
-                    return;
+                    Dump(metadata, il2Cpp, outputDir);
                 }
             }
-            if (args.Length > 3)
+            catch (Exception e)
             {
-                ShowHelp();
-                return;
-            }
-            if (args.Length > 1)
-            {
-                foreach (var arg in args)
-                {
-                    if (File.Exists(arg))
-                    {
-                        var file = File.ReadAllBytes(arg);
-                        if (BitConverter.ToUInt32(file, 0) == 0xFAB11BAF)
-                        {
-                            metadataPath = arg;
-                        }
-                        else
-                        {
-                            il2cppPath = arg;
-                        }
-                    }
-                    else if (Directory.Exists(arg))
-                    {
-                        outputDir = Path.GetFullPath(arg) + Path.DirectorySeparatorChar;
-                    }
-                }
-            }
-            if (outputDir == null)
-            {
-                outputDir = AppDomain.CurrentDomain.BaseDirectory;
-            }
-#if NETFRAMEWORK
-            if (il2cppPath == null)
-            {
-                var ofd = new OpenFileDialog();
-                ofd.Filter = "Il2Cpp binary file|*.*";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    il2cppPath = ofd.FileName;
-                    ofd.Filter = "global-metadata|global-metadata.dat";
-                    if (ofd.ShowDialog() == DialogResult.OK)
-                    {
-                        metadataPath = ofd.FileName;
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    return;
-                }
-            }
-#endif
-            if (il2cppPath == null)
-            {
-                ShowHelp();
-                return;
-            }
-            if (metadataPath == null)
-            {
-                Console.WriteLine($"ERROR: Metadata file not found or encrypted.");
-            }
-            else
-            {
-                try
-                {
-                    if (Init(il2cppPath, metadataPath, out var metadata, out var il2Cpp))
-                    {
-                        Dump(metadata, il2Cpp, outputDir);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
+                Console.WriteLine(e);
             }
             if (config.RequireAnyKey)
             {
